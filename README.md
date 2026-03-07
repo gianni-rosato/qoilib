@@ -2,6 +2,9 @@
 
 Simple [QOI](https://qoiformat.org) implementation in Zig.
 
+Succeeds [qoi-enc-zig](https://github.com/gianni-rosato/qoi-enc-zig) and
+[qoi-dec-zig](https://github.com/gianni-rosato/qoi-dec-zig).
+
 ## Compilation
 
 Requires [Zig](https://ziglang.org) ≥0.15.0

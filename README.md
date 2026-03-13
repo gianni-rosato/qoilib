@@ -87,10 +87,10 @@ Convert between PAM and QOI formats:
 
 ```bash
 # PAM -> QOI
-./qoi encode input.pam output.qoi [colorspace] [color_depth] [dither]
+./qoi enc input.pam output.qoi [colorspace] [color_depth] [dither]
 
 # QOI -> PAM
-./qoi decode input.qoi output.pam
+./qoi dec input.qoi output.pam
 ```
 
 - `colorspace`: 0 = sRGB with linear alpha (default), 1 = all channels linear

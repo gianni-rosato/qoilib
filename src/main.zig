@@ -5,8 +5,8 @@ const pam = @import("pam.zig");
 fn printUsage() void {
     std.debug.print(
         \\Usage:
-        \\  qoi encode <input.pam> <output.qoi> [colorspace] [color_depth] [dither]
-        \\  qoi decode <input.qoi> <output.pam>
+        \\  qoi enc <input.pam> <output.qoi> [colorspace] [color_depth] [dither]
+        \\  qoi dec <input.qoi> <output.pam>
         \\
         \\Colorspace:
         \\  0 = sRGB with linear alpha
@@ -36,7 +36,7 @@ pub fn main() !void {
         return;
     }
 
-    if (std.mem.eql(u8, args[1], "encode")) {
+    if (std.mem.eql(u8, args[1], "enc")) {
         if (args.len < 4 or args.len > 7) {
             printUsage();
             return;
@@ -65,7 +65,7 @@ pub fn main() !void {
         return;
     }
 
-    if (std.mem.eql(u8, args[1], "decode")) {
+    if (std.mem.eql(u8, args[1], "dec")) {
         if (args.len != 4) {
             printUsage();
             return;

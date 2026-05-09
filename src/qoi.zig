@@ -15,10 +15,10 @@ pub const QoiError = error{
     InvalidColorDepth,
     Overflow,
 } || std.mem.Allocator.Error ||
-    std.fs.File.OpenError ||
-    std.fs.File.ReadError ||
-    std.fs.File.WriteError ||
-    std.fs.File.StatError;
+    std.Io.File.OpenError ||
+    std.Io.File.Reader.Error ||
+    std.Io.File.Writer.Error ||
+    std.Io.File.StatError;
 
 const QoiOp = enum(u8) {
     rgb = 0xFE,
@@ -95,26 +95,26 @@ fn sierraLiteInPlace(data: []u8, width: usize, height: usize, channels: u8, quan
 
             for (0..3) |channel| {
                 const pixel_value: f32 = @floatFromInt(data[pixel_index + channel]);
-                const quantized = @as(i16, @intFromFloat(@round(pixel_value / quantize_factor_f32) * quantize_factor_f32));
+                const quantized: i16 = @round((pixel_value / quantize_factor_f32) * quantize_factor_f32);
                 new_pixel[channel] = @intCast(std.math.clamp(quantized, 0, 255));
 
                 const quantization_error = pixel_value - @as(f32, @floatFromInt(new_pixel[channel]));
 
                 if (x + 1 < width) {
                     const neighbor = (y * width + (x + 1)) * channels + channel;
-                    const adjusted = @as(i16, @intFromFloat(@as(f32, @floatFromInt(data[neighbor])) + quantization_error * 0.5));
+                    const adjusted: i16 = @trunc(@as(f32, @floatFromInt(data[neighbor])) + quantization_error * 0.5);
                     data[neighbor] = @intCast(std.math.clamp(adjusted, 0, 255));
                 }
 
                 if (y + 1 < height) {
                     if (x > 0) {
                         const neighbor = ((y + 1) * width + (x - 1)) * channels + channel;
-                        const adjusted = @as(i16, @intFromFloat(@as(f32, @floatFromInt(data[neighbor])) + quantization_error * 0.25));
+                        const adjusted: i16 = @trunc(@as(f32, @floatFromInt(data[neighbor])) + quantization_error * 0.25);
                         data[neighbor] = @intCast(std.math.clamp(adjusted, 0, 255));
                     }
 
                     const neighbor = ((y + 1) * width + x) * channels + channel;
-                    const adjusted = @as(i16, @intFromFloat(@as(f32, @floatFromInt(data[neighbor])) + quantization_error * 0.25));
+                    const adjusted: i16 = @trunc(@as(f32, @floatFromInt(data[neighbor])) + quantization_error * 0.25);
                     data[neighbor] = @intCast(std.math.clamp(adjusted, 0, 255));
                 }
             }

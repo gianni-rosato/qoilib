@@ -75,7 +75,7 @@ pub export fn qoilib_encode(
         return null;
     };
 
-    const dither_mode = std.meta.intToEnum(lib.DitherMode, options.dither) catch {
+    const dither_mode = std.enums.fromInt(lib.DitherMode, options.dither) orelse {
         out_status.* = .invalid_argument;
         return null;
     };

@@ -23,32 +23,40 @@ fn printUsage() void {
     , .{});
 }
 
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+fn enumFromInt(comptime E: type, value: anytype) !E {
+    return std.enums.fromInt(E, value) orelse error.InvalidInput;
+}
+
+pub fn main(init: std.process.Init) !void {
+    var gpa = std.heap.DebugAllocator(.{}){};
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    const args = try std.process.argsAlloc(allocator);
-    defer std.process.argsFree(allocator, args);
+    var arg_iter = try std.process.Args.Iterator.initAllocator(init.minimal.args, allocator);
+    defer arg_iter.deinit();
 
-    if (args.len < 2 or std.mem.eql(u8, args[1], "-h") or std.mem.eql(u8, args[1], "--help")) {
+    var args: std.ArrayList([:0]const u8) = .empty;
+    defer args.deinit(allocator);
+    while (arg_iter.next()) |arg| try args.append(allocator, arg);
+
+    if (args.items.len < 2 or std.mem.eql(u8, args.items[1], "-h") or std.mem.eql(u8, args.items[1], "--help")) {
         printUsage();
         return;
     }
 
-    if (std.mem.eql(u8, args[1], "enc")) {
-        if (args.len < 4 or args.len > 7) {
+    if (std.mem.eql(u8, args.items[1], "enc")) {
+        if (args.items.len < 4 or args.items.len > 7) {
             printUsage();
             return;
         }
 
-        const colorspace: u8 = if (args.len >= 5) try std.fmt.parseInt(u8, args[4], 10) else 0;
-        const color_depth: u16 = if (args.len >= 6) try std.fmt.parseInt(u16, args[5], 10) else 0;
-        const dither: lib.DitherMode = if (args.len >= 7)
-            std.meta.intToEnum(lib.DitherMode, try std.fmt.parseInt(u8, args[6], 10)) catch return error.InvalidInput
+        const colorspace: u8 = if (args.items.len >= 5) try std.fmt.parseInt(u8, args.items[4], 10) else 0;
+        const color_depth: u16 = if (args.items.len >= 6) try std.fmt.parseInt(u16, args.items[5], 10) else 0;
+        const dither: lib.DitherMode = if (args.items.len >= 7)
+            try enumFromInt(lib.DitherMode, try std.fmt.parseInt(u8, args.items[6], 10))
         else
             .none;
-        var image = try pam.loadPAM(allocator, args[2]);
+        var image = try pam.loadPAM(init.io, allocator, args.items[2]);
         defer image.deinit(allocator);
 
         const encoded = try lib.encQoi(allocator, image.data, image.width, image.height, image.channels, .{
@@ -58,21 +66,21 @@ pub fn main() !void {
         });
         defer allocator.free(encoded);
 
-        const output = try std.fs.cwd().createFile(args[3], .{ .truncate = true });
-        defer output.close();
-        try output.writeAll(encoded);
-        std.debug.print("Encoded {s} -> {s}\n", .{ args[2], args[3] });
+        const output = try std.Io.Dir.cwd().createFile(init.io, args.items[3], .{ .truncate = true });
+        defer output.close(init.io);
+        try output.writeStreamingAll(init.io, encoded);
+        std.debug.print("Encoded {s} -> {s}\n", .{ args.items[2], args.items[3] });
         return;
     }
 
-    if (std.mem.eql(u8, args[1], "dec")) {
-        if (args.len != 4) {
+    if (std.mem.eql(u8, args.items[1], "dec")) {
+        if (args.items.len != 4) {
             printUsage();
             return;
         }
 
-        try lib.qoiToPam(allocator, args[2], args[3]);
-        std.debug.print("Decoded {s} -> {s}\n", .{ args[2], args[3] });
+        try lib.qoiToPam(init.io, allocator, args.items[2], args.items[3]);
+        std.debug.print("Decoded {s} -> {s}\n", .{ args.items[2], args.items[3] });
         return;
     }
 

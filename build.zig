@@ -16,9 +16,9 @@ pub fn build(b: *std.Build) void {
             .root_source_file = b.path("src/main.zig"),
             .target = target,
             .optimize = optimize,
+            .link_libc = true,
         }),
     });
-    bin.linkLibC();
     b.installArtifact(bin);
 
     const lib = b.addLibrary(.{
@@ -28,9 +28,9 @@ pub fn build(b: *std.Build) void {
             .root_source_file = b.path("src/c_abi.zig"),
             .target = target,
             .optimize = optimize,
+            .link_libc = true,
         }),
     });
-    lib.linkLibC();
     b.installArtifact(lib);
 
     lib.installHeader(b.path("src/include/qoilib.h"), "qoilib.h");

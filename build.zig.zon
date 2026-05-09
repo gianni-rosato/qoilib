@@ -2,7 +2,7 @@
     .name = .qoilib,
     .version = "0.0.0",
     .fingerprint = 0x7abec50c4e69aec3, // Changing this has security and trust implications.
-    .minimum_zig_version = "0.15.0",
+    .minimum_zig_version = "0.16.0",
     .paths = .{
         "build.zig",
         "build.zig.zon",

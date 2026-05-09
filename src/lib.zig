@@ -48,29 +48,26 @@ pub fn decQoi(allocator: std.mem.Allocator, qoi_bytes: []const u8) !Image {
     return qoi.decodeAlloc(allocator, qoi_bytes);
 }
 
-pub fn pamToQoi(allocator: std.mem.Allocator, input_path: []const u8, output_path: []const u8, options: EncodeOptions) !void {
-    var image: Image = try loadPAM(allocator, input_path);
+pub fn pamToQoi(io: std.Io, allocator: std.mem.Allocator, input_path: []const u8, output_path: []const u8, options: EncodeOptions) !void {
+    var image: Image = try loadPAM(io, allocator, input_path);
     defer image.deinit(allocator);
 
     const encoded: []u8 = try encQoi(allocator, image.data, image.width, image.height, image.channels, options);
     defer allocator.free(encoded);
 
-    const output = try std.fs.cwd().createFile(output_path, .{ .truncate = true });
-    defer output.close();
-    try output.writeAll(encoded);
+    const output = try std.Io.Dir.cwd().createFile(io, output_path, .{ .truncate = true });
+    defer output.close(io);
+    try output.writeStreamingAll(io, encoded);
 }
 
-pub fn qoiToPam(allocator: std.mem.Allocator, input_path: []const u8, output_path: []const u8) !void {
-    const file = try std.fs.cwd().openFile(input_path, .{ .mode = .read_only });
-    defer file.close();
-
-    const qoi_bytes: []u8 = try file.readToEndAlloc(allocator, std.math.maxInt(usize));
+pub fn qoiToPam(io: std.Io, allocator: std.mem.Allocator, input_path: []const u8, output_path: []const u8) !void {
+    const qoi_bytes: []u8 = try std.Io.Dir.cwd().readFileAlloc(io, input_path, allocator, .unlimited);
     defer allocator.free(qoi_bytes);
 
     var image: Image = try decQoi(allocator, qoi_bytes);
     defer image.deinit(allocator);
 
-    const output = try std.fs.cwd().createFile(output_path, .{ .truncate = true });
-    defer output.close();
-    try writePam(output, image);
+    const output = try std.Io.Dir.cwd().createFile(io, output_path, .{ .truncate = true });
+    defer output.close(io);
+    try writePam(output, io, image);
 }

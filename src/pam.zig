@@ -19,7 +19,7 @@ inline fn requantize16to8(value: u16) u8 {
     return @intCast((@as(u32, value) * 255 + 32767) / 65535);
 }
 
-pub fn writePam(file: std.fs.File, image: Image) !void {
+pub fn writePam(file: std.Io.File, io: std.Io, image: Image) !void {
     if (image.channels != 3 and image.channels != 4) return error.UnsupportedChannels;
 
     const allocator = std.heap.page_allocator;
@@ -35,23 +35,24 @@ pub fn writePam(file: std.fs.File, image: Image) !void {
     );
     defer allocator.free(header);
 
-    try file.writeAll(header);
-    try file.writeAll(image.data);
+    try file.writeStreamingAll(io, header);
+    try file.writeStreamingAll(io, image.data);
 }
 
-pub fn loadPAM(allocator: std.mem.Allocator, path: []const u8) PAMLoadError!Image {
-    const file = std.fs.cwd().openFile(path, .{}) catch return error.FileOpenFailed;
-    defer file.close();
+pub fn loadPAM(io: std.Io, allocator: std.mem.Allocator, path: []const u8) PAMLoadError!Image {
+    const file = std.Io.Dir.cwd().openFile(io, path, .{}) catch return error.FileOpenFailed;
+    defer file.close(io);
 
-    const file_size = file.getEndPos() catch return error.ReadFailed;
+    const file_size = file.length(io) catch return error.ReadFailed;
 
-    const file_buffer = allocator.alloc(u8, file_size) catch return error.OutOfMemory;
+    const file_size_usize = std.math.cast(usize, file_size) orelse return error.ReadFailed;
+    const file_buffer = allocator.alloc(u8, file_size_usize) catch return error.OutOfMemory;
     defer allocator.free(file_buffer);
 
-    const bytes_read = file.readAll(file_buffer) catch return error.ReadFailed;
+    const bytes_read = file.readPositionalAll(io, file_buffer, 0) catch return error.ReadFailed;
     if (bytes_read != file_size) return error.ReadFailed;
 
-    const end_header_idx = std.mem.indexOf(u8, file_buffer, "ENDHDR\n") orelse return error.HeaderNotFound;
+    const end_header_idx = std.mem.find(u8, file_buffer, "ENDHDR\n") orelse return error.HeaderNotFound;
     const header_data = file_buffer[0..end_header_idx];
     const data_start = end_header_idx + 7; // "ENDHDR\n" is 7 bytes
 

@@ -7,7 +7,7 @@ Succeeds [qoi-enc-zig](https://github.com/gianni-rosato/qoi-enc-zig) and
 
 ## Compilation
 
-Requires [Zig](https://ziglang.org) ≥0.15.0
+Requires [Zig](https://ziglang.org) ≥0.16.0
 
 ```bash
 zig build                 # Debug
@@ -21,17 +21,10 @@ This produces:
 
 ## Zig Usage
 
-Add as a dependency to `build.zig.zon`:
+Add as a dependency to your Zig project:
 
-```zig
-.{
-    .dependencies = .{
-        .qoilib = .{
-            .url = "https://github.com/gianni-rosato/qoilib/archive/main.tar.gz",
-            .hash = "...",
-        },
-    },
-}
+```sh
+zig fetch --save git+https://github.com/gianni-rosato/qoilib.git
 ```
 
 In `build.zig`:
